@@ -10,6 +10,7 @@ using Vendr.Contrib.Reviews.Services;
 using Vendr.Contrib.Reviews.Web.Dtos;
 using Vendr.Contrib.Reviews.Web.Dtos.Mappers;
 using Vendr.Core.Adapters;
+using Vendr.Core.Models;
 
 #if NETFRAMEWORK
 using System.Web.Http;
@@ -42,7 +43,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         public ReviewApiController(
             IReviewService reviewService,
             ILocalizedTextService textService,
-            IProductAdapter productAdapter)
+            IProductAdapter productAdapter):base()
         {
             _reviewService = reviewService;
             _textService = textService;
@@ -78,12 +79,17 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         }
 
         [HttpGet]
-        public Dictionary<string, string> GetProductData(string productReference, string languageIsoCode = null)
+        public Dictionary<string, string> GetProductData(Guid storeId, string productReference, string languageIsoCode = null)
         {
             if (string.IsNullOrEmpty(languageIsoCode))
                 languageIsoCode = Thread.CurrentThread.CurrentUICulture.Name;
 
-            var snapshot = _productAdapter.GetProductSnapshot(productReference, languageIsoCode);
+            IProductSnapshot snapshot = null;// _productAdapter.GetProductSnapshot(storeId, productReference, languageIsoCode);
+#if NETFRAMEWORK
+            _productAdapter.GetProductSnapshot(storeId, productReference, languageIsoCode);
+#else
+            _productAdapter.GetProductSnapshot(productReference, languageIsoCode);
+#endif
             if (snapshot == null)
                 return null;
 

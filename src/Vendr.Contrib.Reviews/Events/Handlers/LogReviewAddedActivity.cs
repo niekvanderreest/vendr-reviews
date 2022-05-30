@@ -1,6 +1,7 @@
 ﻿using Vendr.Common.Events;
 using Vendr.Core.Adapters;
 using Vendr.Core.Services;
+using Vendr.Core.Models;
 
 #if NETFRAMEWORK
 using Umbraco.Core.Models.PublishedContent;
@@ -27,7 +28,12 @@ namespace Vendr.Contrib.Reviews.Events.Handlers
         {
             var culture = _variationContextAccessor.VariationContext.Culture;
 
-            var snapshot = _productAdapter.GetProductSnapshot(evt.Review.ProductReference, culture);
+            IProductSnapshot snapshot = null;
+#if NETFRAMEWORK
+            _productAdapter.GetProductSnapshot(evt.Review.StoreId, evt.Review.ProductReference, culture);
+#else
+            _productAdapter.GetProductSnapshot(evt.Review.ProductReference, culture);
+#endif
             if (snapshot == null)
                 return;
 
