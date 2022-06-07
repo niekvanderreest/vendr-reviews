@@ -84,12 +84,8 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
             if (string.IsNullOrEmpty(languageIsoCode))
                 languageIsoCode = Thread.CurrentThread.CurrentUICulture.Name;
 
-            IProductSnapshot snapshot = null;// _productAdapter.GetProductSnapshot(storeId, productReference, languageIsoCode);
-#if NETFRAMEWORK
-            _productAdapter.GetProductSnapshot(storeId, productReference, languageIsoCode);
-#else
-            _productAdapter.GetProductSnapshot(productReference, languageIsoCode);
-#endif
+            IProductSnapshot snapshot = _productAdapter.GetProductSnapshot(storeId, productReference, languageIsoCode);
+
             if (snapshot == null)
                 return null;
 

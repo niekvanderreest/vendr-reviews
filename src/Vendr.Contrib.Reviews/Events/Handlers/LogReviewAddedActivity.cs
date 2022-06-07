@@ -28,12 +28,8 @@ namespace Vendr.Contrib.Reviews.Events.Handlers
         {
             var culture = _variationContextAccessor.VariationContext.Culture;
 
-            IProductSnapshot snapshot = null;
-#if NETFRAMEWORK
-            _productAdapter.GetProductSnapshot(evt.Review.StoreId, evt.Review.ProductReference, culture);
-#else
-            _productAdapter.GetProductSnapshot(evt.Review.ProductReference, culture);
-#endif
+            IProductSnapshot snapshot = _productAdapter.GetProductSnapshot(evt.Review.StoreId, evt.Review.ProductReference, culture);
+
             if (snapshot == null)
                 return;
 
