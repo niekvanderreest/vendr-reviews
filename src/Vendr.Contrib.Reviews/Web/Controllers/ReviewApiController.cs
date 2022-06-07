@@ -43,7 +43,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         public ReviewApiController(
             IReviewService reviewService,
             ILocalizedTextService textService,
-            IProductAdapter productAdapter):base()
+            IProductAdapter productAdapter)
         {
             _reviewService = reviewService;
             _textService = textService;
