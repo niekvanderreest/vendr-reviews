@@ -72,10 +72,11 @@
                     "Failed to change review status");
             },
 
-            getProductData: function (productReference, languageIsoCode) {
+            getProductData: function (storeId, productReference, languageIsoCode) {
                 return umbRequestHelper.resourcePromise(
                     $http.get("/umbraco/backoffice/VendrReviews/ReviewApi/GetProductData", {
                         params: {
+                            storeId: storeId,
                             productReference: productReference,
                             languageIsoCode: languageIsoCode
                         }
