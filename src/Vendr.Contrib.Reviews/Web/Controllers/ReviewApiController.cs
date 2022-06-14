@@ -97,10 +97,24 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
             };
         }
 
+        
+
         [HttpGet]
+#if NETFRAMEWORK
         public ReviewEditDto GetReview(Guid id)
+#else
+        public ActionResult<ReviewEditDto> GetReview(Guid id)
+#endif
         {
             var entity = _reviewService.GetReview(id);
+            if (entity == null)
+            {
+#if NETFRAMEWORK
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+#else
+        return NotFound();
+#endif
+            }
 
             return EntityMapper.ReviewEntityToEditDto(entity);
         }
@@ -113,7 +127,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         }
 
         [HttpGet]
-        public PagedResult<ReviewDto> GetReviewsForProduct(Guid storeId, string productReference, long pageNumber = 1, int pageSize = 50)
+        public PagedResult<ReviewDto> GetReviewsForProduct(Guid storeId, string productReference, long pageNumber = 1, int pageSize = 30)
         {
             var result = _reviewService.GetReviewsForProduct(storeId, productReference, pageNumber, pageSize);
 
@@ -124,7 +138,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         }
 
         [HttpGet]
-        public PagedResult<ReviewDto> GetReviewsForCustomer(Guid storeId, string customerReference, long pageNumber = 1, int pageSize = 50)
+        public PagedResult<ReviewDto> GetReviewsForCustomer(Guid storeId, string customerReference, long pageNumber = 1, int pageSize = 30)
         {
             var result = _reviewService.GetReviewsForCustomer(storeId, customerReference, pageNumber: pageNumber, pageSize: pageSize);
 
@@ -136,7 +150,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
 
         [HttpGet]
 #if NETFRAMEWORK
-        public PagedResult<ReviewDto> SearchReviews(Guid storeId, [FromUri] ReviewStatus[] statuses = null, [FromUri] decimal[] ratings = null, string searchTerm = null, long pageNumber = 1, int pageSize = 50)
+        public PagedResult<ReviewDto> SearchReviews(Guid storeId, [FromUri] ReviewStatus[] statuses = null, [FromUri] decimal[] ratings = null, string searchTerm = null, long pageNumber = 1, int pageSize = 30)
         {
             var result = _reviewService.SearchReviews(storeId, statuses: statuses, ratings: ratings, searchTerm: searchTerm, pageNumber: pageNumber, pageSize: pageSize);
 
@@ -146,7 +160,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
             };
         }
 #else
-        public PagedResult<ReviewDto> SearchReviews(Guid storeId, [FromQuery] ReviewStatus[] statuses = null, [FromQuery] decimal[] ratings = null, string searchTerm = null, long pageNumber = 1, int pageSize = 50)
+        public PagedResult<ReviewDto> SearchReviews(Guid storeId, [FromQuery] ReviewStatus[] statuses = null, [FromQuery] decimal[] ratings = null, string searchTerm = null, long pageNumber = 1, int pageSize = 30)
         {
             var result = _reviewService.SearchReviews(storeId, statuses: statuses, ratings: ratings, searchTerm: searchTerm, pageNumber: pageNumber, pageSize: pageSize);
 
