@@ -27,7 +27,11 @@ namespace Vendr.Contrib.Reviews.Migrations.V_1_0_0
         {
             const string commentTableName = Constants.DatabaseSchema.Tables.Comment;
             const string reviewTableName = Constants.DatabaseSchema.Tables.Review;
+#if NET6_0_OR_GREATER
+            const string storeTableName = Vendr.Persistence.Constants.DatabaseSchema.Tables.Store;
+#else
             const string storeTableName = Vendr.Infrastructure.Constants.DatabaseSchema.Tables.Store;
+#endif
 
             if (!TableExists(commentTableName))
             {
@@ -35,30 +39,25 @@ namespace Vendr.Contrib.Reviews.Migrations.V_1_0_0
                 var nvarcharMaxType = SqlSyntax is SqlCeSyntaxProvider
                     ? "NTEXT"
                     : "NVARCHAR(MAX)";
-#else
+#elif NET5_0
                 var nvarcharMaxType = DatabaseType is NPoco.DatabaseTypes.SqlServerCEDatabaseType
                     ? "NTEXT"
+                    : "NVARCHAR(MAX)";
+#elif NET6_0_OR_GREATER
+                var nvarcharMaxType = DatabaseType is NPoco.DatabaseTypes.SqlServerCEDatabaseType
+                    ? "NTEXT"
+                    : DatabaseType is NPoco.DatabaseTypes.SQLiteDatabaseType 
+                    ? "TEXT" 
                     : "NVARCHAR(MAX)";
 #endif
 
                 // Create table
                 Create.Table(commentTableName)
                     .WithColumn("id").AsGuid().NotNullable().WithDefault(SystemMethods.NewGuid).PrimaryKey($"PK_{commentTableName}")
-                    .WithColumn("storeId").AsGuid().NotNullable()
-                    .WithColumn("reviewId").AsGuid().NotNullable()
+                    .WithColumn("storeId").AsGuid().NotNullable().ForeignKey($"FK_{commentTableName}_{storeTableName}", storeTableName, "id")
+                    .WithColumn("reviewId").AsGuid().NotNullable().ForeignKey($"FK_{commentTableName}_{reviewTableName}", reviewTableName, "id")
                     .WithColumn("body").AsCustom(nvarcharMaxType).NotNullable()
                     .WithColumn("createDate").AsDateTime().NotNullable()
-                    .Do();
-
-                // Foreign key constraints
-                Create.ForeignKey($"FK_{commentTableName}_{storeTableName}")
-                    .FromTable(commentTableName).ForeignColumn("storeId")
-                    .ToTable(storeTableName).PrimaryColumn("id")
-                    .Do();
-
-                Create.ForeignKey($"FK_{commentTableName}_{reviewTableName}")
-                    .FromTable(commentTableName).ForeignColumn("reviewId")
-                    .ToTable(reviewTableName).PrimaryColumn("id")
                     .Do();
             }
         }

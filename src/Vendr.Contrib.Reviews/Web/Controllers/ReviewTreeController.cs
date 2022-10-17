@@ -45,13 +45,13 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         protected override TreeNodeCollection GetTreeNodes(string id, [ModelBinder(typeof(HttpQueryStringModelBinder))] FormDataCollection queryStrings) => null;
     }
 #else
-[Tree(
-        Vendr.Umbraco.Constants.Sections.Commerce,
-        Constants.Trees.Reviews.Alias,
-        //TreeGroup = "commerce",
-        TreeTitle = "Reviews",
-        SortOrder = 10,
-        TreeUse = TreeUse.None)]
+    [Tree(
+            Vendr.Umbraco.Constants.Sections.Commerce,
+            Constants.Trees.Reviews.Alias,
+            //TreeGroup = "commerce",
+            TreeTitle = "Reviews",
+            SortOrder = 10,
+            TreeUse = TreeUse.None)]
     [PluginController(Constants.Internals.PluginControllerName)]
     public sealed class ReviewTreeController : TreeController
     {
@@ -72,9 +72,7 @@ namespace Vendr.Contrib.Reviews.Web.Controllers
         protected override ActionResult<MenuItemCollection> GetMenuForNode(string id, [ModelBinder(typeof(HttpQueryStringModelBinder))] FormCollection queryStrings)
         {
             var menu = _menuItemCollectionFactory.Create();
-
             menu.Items.Add<ActionDelete>(_localizedTextService).LaunchDialogView("/app_plugins/vendrreviews/backoffice/views/dialogs/delete.html", "Delete");
-
             return menu;
         }
 

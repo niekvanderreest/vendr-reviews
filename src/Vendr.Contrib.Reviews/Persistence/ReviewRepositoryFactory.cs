@@ -5,24 +5,41 @@ using Vendr.Infrastructure;
 
 #if NETFRAMEWORK
 using Umbraco.Core.Scoping;
-#else
+#elif NET5_0
 using Umbraco.Cms.Core.Scoping;
+#elif NET6_0_OR_GREATER
+using Umbraco.Cms.Infrastructure.Scoping;
+using Vendr.Persistence;
 #endif
 
 namespace Vendr.Contrib.Reviews.Persistence
 {
     public class ReviewRepositoryFactory : IReviewRepositoryFactory
     {
-        private readonly IScopeAccessor _scopeAccessor;
+        //private readonly IScopeAccessor _scopeAccessor;
+        private readonly IScopeProvider _scopeProvider;
 
-        public ReviewRepositoryFactory(IScopeAccessor scopeAccessor)
+#if NET6_0_OR_GREATER
+        private readonly INPocoDatabaseProvider _dbProvider;
+        public ReviewRepositoryFactory(IScopeProvider scopeProvider, INPocoDatabaseProvider dbProvider)
+#else 
+        public ReviewRepositoryFactory(IScopeProvider scopeProvider)
+#endif
         {
-            _scopeAccessor = scopeAccessor;
+            _scopeProvider = scopeProvider;
+#if NET6_0
+            _dbProvider = dbProvider;
+#endif
         }
 
         public IReviewRepository CreateReviewRepository(IUnitOfWork uow)
         {
-            return new ReviewRepository((IDatabaseUnitOfWork)uow, _scopeAccessor.AmbientScope.SqlContext);
+#if NET6_0
+            return new ReviewRepository(_dbProvider, _scopeProvider.SqlContext);
+#else
+            return new ReviewRepository((IDatabaseUnitOfWork)uow, _scopeProvider.SqlContext);
+#endif
         }
+
     }
 }

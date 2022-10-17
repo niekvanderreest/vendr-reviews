@@ -6,29 +6,56 @@ using Vendr.Common.Models;
 using Vendr.Contrib.Reviews.Models;
 using Vendr.Contrib.Reviews.Persistence.Dtos;
 using Vendr.Contrib.Reviews.Persistence.Factories;
-using Vendr.Infrastructure;
+using Vendr.Common;
 
 #if NETFRAMEWORK
 using Umbraco.Core.Persistence;
 using Umbraco.Core.Persistence.SqlSyntax;
-#else
+#elif NET5_0_OR_GREATER
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Persistence.SqlSyntax;
 using Umbraco.Extensions;
+#endif
+
+#if NET6_0_OR_GREATER
+using Vendr.Persistence;
+#else
+using Vendr.Infrastructure;
 #endif
 
 namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
 {
     internal class ReviewRepository : RepositoryBase, IReviewRepository
     {
-        private readonly IDatabaseUnitOfWork _uow;
-        private readonly ISqlContext _sqlSyntax;
 
+        private readonly ISqlContext _sqlSyntax;
+#if NET6_0_OR_GREATER
+        private readonly IUnitOfWorkProvider _uowProvider;
+        private readonly INPocoDatabaseProvider _dbProvider;
+        public ReviewRepository(INPocoDatabaseProvider dbProvider, ISqlContext sqlSyntax)
+#else
+        private readonly IDatabaseUnitOfWork _uow;
         public ReviewRepository(IDatabaseUnitOfWork uow, ISqlContext sqlSyntax)
+#endif
         {
+#if NET6_0_OR_GREATER
+            _dbProvider = dbProvider;
+#else
             _uow = uow;
+#endif
             _sqlSyntax = sqlSyntax;
         }
+
+
+        private IDatabase GetDatabase()
+        {
+#if NET6_0_OR_GREATER
+            return _dbProvider.GetDatabase();
+#else
+            return GetDatabase();
+#endif
+        }
+
 
         protected Sql<ISqlContext> Sql() => _sqlSyntax.Sql();
         protected ISqlSyntaxProvider SqlSyntax => _sqlSyntax.SqlSyntax;
@@ -45,7 +72,7 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
                 .LeftJoin<CommentDto>().On<CommentDto, ReviewDto>((comment, review) => comment.ReviewId == review.Id)
                 .WhereIn<ReviewDto>(x => x.Id, ids);
 
-            var data = _uow.Database.FetchOneToMany<ReviewDto>(x => x.Comments, sql);
+            var data = GetDatabase().FetchOneToMany<ReviewDto>(x => x.Comments, sql);
 
             return data.Select(EntityFactory.BuildEntity).ToList();
         }
@@ -110,8 +137,8 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
 
             sql.OrderByDescending<ReviewDto>(x => x.CreateDate);
 
-            var page = _uow.Database.Page<ReviewDto>(pageNumber, pageSize, sql);
-   
+            var page = GetDatabase().Page<ReviewDto>(pageNumber, pageSize, sql);
+
             return new PagedResult<Review>(page.TotalItems, page.CurrentPage, page.ItemsPerPage)
             {
                 Items = page.Items.Select(EntityFactory.BuildEntity).ToList()
@@ -120,7 +147,7 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
 
         public decimal GetAverageRatingForProduct(Guid storeId, string productReference)
         {
-            return _uow.Database.ExecuteScalar<decimal>($"SELECT AVG(rating) FROM {ReviewDto.TableName} WHERE storeId = @0 AND productReference = @1 AND status = @2", storeId, productReference, (int)ReviewStatus.Approved);
+            return GetDatabase().ExecuteScalar<decimal>($"SELECT AVG(rating) FROM {ReviewDto.TableName} WHERE storeId = @0 AND productReference = @1 AND status = @2", storeId, productReference, (int)ReviewStatus.Approved);
         }
 
         public Review SaveReview(Review review)
@@ -129,24 +156,24 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
 
             dto.Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id;
 
-            _uow.Database.Save(dto);
+            GetDatabase().Save(dto);
 
             return EntityFactory.BuildEntity(dto);
         }
 
         public void DeleteReview(Guid id)
         {
-            _uow.Database.Delete<CommentDto>("WHERE reviewId = @0", id);
-            _uow.Database.Delete<ReviewDto>("WHERE id = @0", id);
+            GetDatabase().Delete<CommentDto>("WHERE reviewId = @0", id);
+            GetDatabase().Delete<ReviewDto>("WHERE id = @0", id);
         }
 
         public Review ChangeReviewStatus(Guid id, ReviewStatus status)
         {
-            var review = _uow.Database.SingleById<ReviewDto>(id);
+            var review = GetDatabase().SingleById<ReviewDto>(id);
 
             review.Status = (int)status;
 
-            _uow.Database.Update(review);
+            GetDatabase().Update(review);
 
             return EntityFactory.BuildEntity(review);
         }
@@ -157,7 +184,7 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
 
             dto.Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id;
 
-            var entry = _uow.Database.SingleOrDefaultById<CommentDto>(dto.Id);
+            var entry = GetDatabase().SingleOrDefaultById<CommentDto>(dto.Id);
             if (entry == null)
             {
                 dto.CreateDate = dto.CreateDate == DateTime.MinValue ? DateTime.UtcNow : dto.CreateDate;
@@ -167,7 +194,7 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
                 dto.CreateDate = entry.CreateDate;
             }
 
-            _uow.Database.Save(dto);
+            GetDatabase().Save(dto);
 
             return EntityFactory.BuildEntity(dto);
         }
@@ -184,12 +211,12 @@ namespace Vendr.Contrib.Reviews.Persistence.Repositories.Implement
                 .Where<CommentDto>(x => x.StoreId == storeId)
                 .WhereIn<CommentDto>(x => x.ReviewId, reviewIds);
 
-            return _uow.Database.Fetch<CommentDto>(sql).Select(EntityFactory.BuildEntity).ToList();
+            return GetDatabase().Fetch<CommentDto>(sql).Select(EntityFactory.BuildEntity).ToList();
         }
 
         public void DeleteComment(Guid id)
         {
-            _uow.Database.Delete<CommentDto>("WHERE id = @0", id);
+            GetDatabase().Delete<CommentDto>("WHERE id = @0", id);
         }
     }
 }
